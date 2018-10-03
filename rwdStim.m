@@ -1,6 +1,6 @@
 %
 %        $Id: rwdStim.m,v 1.2 2016/01/22 15:30:22 eli Exp $
-%      usage: rwdStim
+%      usage: rwdStim('useStaircase',1);
 %         by: eli merriam
 %       date: 01/27/07
 %    purpose: oriented grating stimulus times a radial or angular modulator
@@ -23,6 +23,8 @@ getArgs(varargin, [], 'verbose=0');
 
 % set default parameters
 % if ieNotDefined('direction'),direction = -1;end
+
+if ieNotDefined('waitForBacktick'), waitForBacktick = 0; end
 if ieNotDefined('useStaircase'), useStaircase = 0; end
 interTime = 0.7;
 stimTime = 0.3;
@@ -93,7 +95,9 @@ fixStimulus.responseTime = responseTime;
 fixStimulus.stimTime = stimTime;
 fixStimulus.interTime = interTime;
 fixStimulus.trialTime = trialLen;%same trial length for both tasks
-
+fixStimulus.waitForBacktick = waitForBacktick
+fixStimulus.fixWidth = 1;
+fixStimulus.fixLineWidth = 3;
 
 [task{1} myscreen] = myFixStairInitTask(myscreen);
 task{1}{1}.numTrials = numTrials; 
@@ -101,8 +105,8 @@ task{1}{1}.response = zeros(numTrials,1);
 task{1}{1}.correctResponse = zeros(numTrials,1);
 task{1}{1}.correctness = zeros(numTrials,1);
 %both tasks should wait for backtick to begin
-task{1}{1}.waitForBacktick = 1;
-task{2}{1}.waitForBacktick = 1;
+task{1}{1}.waitForBacktick = waitForBacktick;
+task{2}{1}.waitForBacktick = waitForBacktick;
 
 %each segment is a different phase. Entire trial is a single orientation,
 %contrast,and spatial frequency.
@@ -112,12 +116,15 @@ seglen(end) = stimulus.trialLen-stimulus.stimLen - 0.5;%shorten blank segment le
 % seglen(end) = 0.1;
 task{2}{1}.seglen = seglen;
 task{2}{1}.synchToVol = zeros(size(seglen));
-task{2}{1}.synchToVol(end) = 1;
+if waitForBacktick
+    task{2}{1}.synchToVol(end) = 1;
+end
+
 orientations = linspace(0, 180, 17);
 orientations = orientations(1:end-1);
 stimulus.orientations = orientations;
 
-
+% stimulus properties, block randomized
 task{2}{1}.randVars.block.contrast = logspace(-0.7,0,5);
 task{2}{1}.randVars.block.spatFreq = [0.15 0.3 0.6 1.2 2.4 4.8];
 task{2}{1}.randVars.block.orientation = 1:length(orientations);
@@ -145,18 +152,25 @@ myscreen = eyeCalibDisp(myscreen);
 %initial screen
 mglClearScreen;
 totalRwd = task{1}{1}.numTrials * incr;
-mglTextSet('Helvetica',50,[1 0 1],0,0,0,0,0,0,0);
-    if stimulus.rewardVal == 'H';
-        text = sprintf('This is a high-reward run');
-        mglTextDraw(text,[0 3]);
-        text = sprintf('You will gain or lose up to $%0.2f in this run based on performance',totalRwd);
-        mglTextDraw(text,[0 -3]);
-    elseif stimulus.rewardVal == 'L';
-        text = sprintf('This is a low-reward run');
-        mglTextDraw(text,[0 3]);
-        text = sprintf('You will gain or lose up to $%0.2f in this run based on performance',totalRwd);
-        mglTextDraw(text,[0 -3]);
-    end
+mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
+%     if stimulus.rewardVal == 'H';
+%         text = sprintf('This is a high-reward run');
+text = sprintf('You will gain or lose up to');
+        mglTextDraw(text,[0 2]);
+        text = sprintf('$%0.2f',totalRwd);
+        mglTextSet('Helvetica',80,[1 1 1],0,0,0,0,0,0,0);
+        mglTextDraw(text,[0 0]);
+        text = sprintf('in this run based on performance');
+        mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
+        mglTextDraw(text,[0 -2]);
+%         text = sprintf('You will gain or lose up to /n $%0.2f /n in this run based on performance',totalRwd);
+%         mglTextDraw(text,[0 -3]);
+%     elseif stimulus.rewardVal == 'L';
+%         text = sprintf('This is a low-reward run');
+%         mglTextDraw(text,[0 3]);
+%         text = sprintf('You will gain or lose up to $%0.2f in this run based on performance',totalRwd);
+%         mglTextDraw(text,[0 -3]);
+%     end
     mglFlush;
 
 
@@ -168,9 +182,14 @@ mglWaitSecs(3);
 % Main display loop
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 mglClearScreen(); mglFlush; mglClearScreen();
-mglFixationCross(0.7, 2, [0 1 1], [0 0]) % default fixation cross
+mglFixationCross(fixStimulus.fixWidth,fixStimulus.fixLineWidth,[0 1 1], [0 0]) % default fixation cross
 mglFlush
-mglFixationCross(0.7, 2, [0 1 1], [0 0]) % default fixation cross``````
+mglFixationCross(fixStimulus.fixWidth,fixStimulus.fixLineWidth,[0 1 1], [0 0]) % default fixation cross
+if ~waitForBacktick
+    mglWaitSecs(3);
+end
+
+
 phaseNum = 1;
 while (phaseNum <= length(task)) && ~myscreen.userHitEsc
     % update the task
@@ -207,13 +226,20 @@ end
 disp(sprintf('\n% --------------------------------------------- %\n'));
 
 mglClearScreen;
-mglTextSet('Helvetica',50,[0 0.5 1 1],0,0,0,0,0,0,0);
+% mglTextSet('Helvetica',50,[0 0.5 1 1],0,0,0,0,0,0,0);
+mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
 % text = sprintf('You got %0.2f%% correct', stimulus.percentCorrect*100); 
 % mglTextDraw(text,[0 3]);
-text = sprintf('You gained $%0.2f in this run', rwd); 
+text = sprintf('You gained');
+mglTextDraw(text,[0 3]);
+text = sprintf('$%0.2f', rwd); 
+mglTextSet('Helvetica',70,[1 1 1],0,0,0,0,0,0,0);
+mglTextDraw(text,[0 1.5]);
+text = sprintf('in this run', rwd); 
+mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
 mglTextDraw(text,[0 0]);
 text = sprintf('Current Balance: $%0.2f',stimulus.currBal);
-mglTextDraw(text,[0 -3]);
+mglTextDraw(text,[0 -4]);
 mglFlush;
 mglWaitSecs(3);
 
@@ -431,7 +457,12 @@ task{1}.seglen = [fixStimulus.stimTime fixStimulus.interTime fixStimulus.stimTim
 % task{1}.getResponse = [0 0 0 0 0 1];
 task{1}.getResponse = [0 0 0 0 1 0];
 task{1}.synchToVol = zeros(size(task{1}.seglen));
-task{1}.synchToVol(end) = 1;
+% task{1}.synchToVol(end) = 1;
+if fixStimulus.waitForBacktick
+    task{1}.synchToVol(end) = 1;
+end
+    
+ 
 [task{1} myscreen] = addTraces(task{1}, myscreen, 'segment', 'phase', 'response');
 
 % init the staircase
