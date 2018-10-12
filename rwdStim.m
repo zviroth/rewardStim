@@ -40,7 +40,7 @@ if ieNotDefined('probRwd'), probRwd = 0; end
 if ieNotDefined('currBal'), currBal = 30; end
 if ieNotDefined('fixThresh'), fixThresh = 0.2; end
 TR=1.5;
-numTRs = 15;%168;
+numTRs = 168;%168;
 if ieNotDefined('numTrials'), numTrials = ceil(TR*numTRs/trialLen); end
 
 % check to see whether screen is still open
