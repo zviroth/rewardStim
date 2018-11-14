@@ -10,7 +10,7 @@
 % e = getTaskParameters(s.myscreen,s.task);
 % mrPrintSurf
 
-function myscreen = rwdStim(varargin)
+function [] = rwdStim(varargin)
 
 % check arguments
 if ~any(nargin == [0:10])
@@ -27,19 +27,21 @@ getArgs(varargin, [], 'verbose=0');
 if ieNotDefined('displayName'), displayName = 'rm315'; end
 if ieNotDefined('waitForBacktick')
     if strcmp(displayName, 'rm315') || strcmp(displayName, 'laptop')
-        waitForBacktick = 0; 
+        waitForBacktick = 0;
     else
         waitForBacktick = 1;
     end
 end
 if ieNotDefined('useStaircase'), useStaircase = 1; end
+if ieNotDefined('threshStair1'), threshStair1 = 0; end
+if ieNotDefined('threshStair2'), threshStair2 = 0.3; end
 interTime = 0.7;
 stimTime = 0.3;
 responseTime=1;
 stimLen = 2*interTime + 2*stimTime + responseTime;
 if ieNotDefined('stimLen'),stimLen = 2*interTime + 2*stimTime + responseTime;end %should be equal to fixation trial length
 %also, should be a multiple of frameLen
-if ieNotDefined('trialLen'),trialLen = 20;end %in seconds
+if ieNotDefined('trialLen'),trialLen = 18;end %in seconds
 if ieNotDefined('frameLen'),frameLen = 0.25; end
 if ieNotDefined('innerEdge'),innerEdge = 1.3; end
 if ieNotDefined('outerEdge'),outerEdge = 25; end
@@ -48,8 +50,8 @@ if ieNotDefined('rewardType'), rewardType = 'H'; end
 if ieNotDefined('runNum'), runNum = 1; end
 if ieNotDefined('probRwd'), probRwd = 0; end
 if ieNotDefined('currBal'), currBal = 30; end
-if ieNotDefined('fixThresh'), fixThresh = 0.2; end
-if ieNotDefined('numTRs'), numTRs = 200; end
+% if ieNotDefined('fixThresh'), fixThresh = 0.2; end
+if ieNotDefined('numTRs'), numTRs = 204; end
 TR=1.5;
 if ieNotDefined('numTrials'), numTrials = ceil(TR*numTRs/trialLen); end
 
@@ -59,9 +61,10 @@ initRwdL = 0.09;%reward for first low reward run
 initRwdH = 1.0;%reward for first high reward run
 
 if rewardType == 'H'
-   rewardValue = initRwdH + incrRwdH * runNum/2;
+    rewardValue = initRwdH + incrRwdH * runNum/2;
 elseif rewardType == 'L'
     rewardValue = initRwdL + incrRwdL * runNum/2;
+    rewardValue = min(rewardValue,0.01);%don't want to reach zero
 end
 
 global stimulus;
@@ -112,7 +115,9 @@ fixStimulus.diskSize = 0;
 fixStimulus.fixWidth = 0.75;
 fixStimulus.fixLineWidth = 3;
 fixStimulus.stairStepSize = 0.05;
-fixStimulus.threshold = fixThresh;
+fixStimulus.threshStair1 = threshStair1;
+fixStimulus.threshStair2 = threshStair2;
+% fixStimulus.threshold = fixThresh;
 fixStimulus.responseTime = responseTime;
 fixStimulus.stimTime = stimTime;
 fixStimulus.interTime = interTime;
@@ -122,7 +127,7 @@ fixStimulus.fixWidth = 1;
 fixStimulus.fixLineWidth = 3;
 
 [task{1} myscreen] = myFixStairInitTask(myscreen);
-task{1}{1}.numTrials = numTrials; 
+task{1}{1}.numTrials = numTrials;
 % task{1}{1}.nTrials = numTrials;
 task{1}{1}.response = zeros(numTrials,1);
 task{1}{1}.correctResponse = zeros(numTrials,1);
@@ -178,14 +183,14 @@ mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
 %     if stimulus.rewardType == 'H';
 %         text = sprintf('This is a high-reward run');
 text = sprintf('You will gain or lose up to');
-        mglTextDraw(text,[0 2]);
-        text = sprintf('$%0.2f',totalRwd);
-        mglTextSet('Helvetica',80,[1 1 1],0,0,0,0,0,0,0);
-        mglTextDraw(text,[0 0]);
-        text = sprintf('in this run based on performance');
-        mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
-        mglTextDraw(text,[0 -2]);
-    mglFlush;
+mglTextDraw(text,[0 2]);
+text = sprintf('$%0.2f',totalRwd);
+mglTextSet('Helvetica',80,[1 1 1],0,0,0,0,0,0,0);
+mglTextDraw(text,[0 0]);
+text = sprintf('in this run based on performance');
+mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
+mglTextDraw(text,[0 -2]);
+mglFlush;
 
 mglWaitSecs(3);
 
@@ -218,26 +223,25 @@ end
 %calculate reward for this run
 if probRwd
     randP = randperm(task{1}{1}.numTrials);
-   rwd = task{1}{1}.correctness(randP(1)) * task{1}{1}.numTrials * stimulus.rewardValue;%incr;
+    rwd = task{1}{1}.correctness(randP(1)) * task{1}{1}.numTrials * stimulus.rewardValue;%incr;
 else
     rwd = sum(task{1}{1}.correctness) * stimulus.rewardValue;
 end
 stimulus.currBal = stimulus.currBal + rwd;
-disp(sprintf('\n% --------------------------------------------- %\n')); 
+disp(sprintf('\n% --------------------------------------------- %\n'));
 
 %calculate reward for next run
 newRunNum = stimulus.runNum+1;
 if stimulus.rewardType == 'H'
     newRewardType = 'L';
-%     newRewardValue = initRwdL + incrRwdL * newRunNum/2;
+    %     newRewardValue = initRwdL + incrRwdL * newRunNum/2;
 elseif stimulus.rewardType == 'L'
     newRewardType = 'H';
-%     newRewardValue = initRwdH + incrRwdH * newRunNum/2;
+    %     newRewardValue = initRwdH + incrRwdH * newRunNum/2;
 end
 
 % disp(['rwdStim(''rewardType=''''' newRewardType ...
-%     ''''''',''rewardValue=' num2str(newRewardValue) ...
-%     ''',''runNum=' num2str(newRunNum) ...
+%     ''''''',''runNum=' num2str(newRunNum) ...
 %     ''',''useStaircase=' num2str(fixStimulus.useStaircase) ...
 %     ''',''currBal=' num2str(stimulus.currBal) ...
 %     ''',''numTrials=' num2str(task{1}{1}.numTrials) ...
@@ -245,11 +249,12 @@ end
 %     ''''''', ''fixThresh=' num2str(fixStimulus.threshold) ''');']);
 disp(['rwdStim(''rewardType=''''' newRewardType ...
     ''''''',''runNum=' num2str(newRunNum) ...
-    ''',''useStaircase=' num2str(fixStimulus.useStaircase) ...
+    ''',''useStaircase=0' ...
     ''',''currBal=' num2str(stimulus.currBal) ...
     ''',''numTrials=' num2str(task{1}{1}.numTrials) ...
     ''',''displayName=''''' myscreen.displayName ...
-    ''''''', ''fixThresh=' num2str(fixStimulus.threshold) ''');']);
+    ''''''', ''fixThresh1=' num2str(fixStimulus.threshStair1) ...
+    ''', ''fixThresh2=' num2str(fixStimulus.threshStair2) ''');']);
 
 
 disp(sprintf('\n% --------------------------------------------- %\n'));
@@ -260,14 +265,14 @@ disp(sprintf('\n% --------------------------------------------- %\n'));
 mglClearScreen;
 % mglTextSet('Helvetica',50,[0 0.5 1 1],0,0,0,0,0,0,0);
 mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
-% text = sprintf('You got %0.2f%% correct', stimulus.percentCorrect*100); 
+% text = sprintf('You got %0.2f%% correct', stimulus.percentCorrect*100);
 % mglTextDraw(text,[0 3]);
 text = sprintf('You gained');
 mglTextDraw(text,[0 3]);
-text = sprintf('$%0.2f', rwd); 
+text = sprintf('$%0.2f', rwd);
 mglTextSet('Helvetica',70,[1 1 1],0,0,0,0,0,0,0);
 mglTextDraw(text,[0 1.5]);
-text = sprintf('in this run'); 
+text = sprintf('in this run');
 mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
 mglTextDraw(text,[0 0]);
 text = sprintf('Current Balance: $%0.2f',stimulus.currBal);
@@ -445,12 +450,12 @@ stimulus.tex = mglCreateTexture(r,[],1);
 %             turns yellow to indicate the response interval, and the subject
 %             is required to press 1 or 2 to indicate in which interval the cross
 %             appeared darker. The cross will then turn green or red to indicate
-%             correct or incorrect responses. The dimness of the target is 
+%             correct or incorrect responses. The dimness of the target is
 %             controlled by a 2 down 1 up staircase to keep task difficulty
-%             the same. 
+%             the same.
 %
 %             See testExperiment.m for how this is used in a task. If you want
-%             to change parameters, before you call fixStairInitTask, set 
+%             to change parameters, before you call fixStairInitTask, set
 %             appropriate fields of the global variable fixStimulus. e.g.:
 %
 %             global fixStimulus
@@ -462,15 +467,15 @@ function [task, myscreen] = myFixStairInitTask(myscreen)
 
 % check arguments
 if ~any(nargin == [1])
-  help fixDispStairInitTask
-  return
+    help fixDispStairInitTask
+    return
 end
 
 % create the stimulus for the experiment, use defaults if they are
 % not already set
 global fixStimulus;
 myscreen = initStimulus('fixStimulus',myscreen);
-if ~isfield(fixStimulus,'threshold'); fixStimulus.threshold = 0.5; end
+% if ~isfield(fixStimulus,'threshold'); fixStimulus.threshold = 0.5; end
 if ~isfield(fixStimulus,'pedestal'); fixStimulus.pedestal = 0.4; end
 if ~isfield(fixStimulus,'stairUp'); fixStimulus.stairUp = 1; end
 if ~isfield(fixStimulus,'stairDown'); fixStimulus.stairDown = 2; end
@@ -493,7 +498,7 @@ if ~isfield(fixStimulus,'verbose'); fixStimulus.verbose = 1;end
 
 % for trainingMode set text
 if fixStimulus.trainingMode
-  mglTextSet('Helvetica',64,[1 1 1],0,0,0,0,0,0,0);
+    mglTextSet('Helvetica',64,[1 1 1],0,0,0,0,0,0,0);
 end
 
 % create a fixation task
@@ -508,14 +513,27 @@ task{1}.synchToVol = zeros(size(task{1}.seglen));
 if fixStimulus.waitForBacktick
     task{1}.synchToVol(end) = 1;
 end
-    
- 
+
+
 [task{1}, myscreen] = addTraces(task{1}, myscreen, 'segment', 'phase', 'response');
 
-% init the staircase
-fixStimulus.staircase = upDownStaircase(fixStimulus.stairUp,fixStimulus.stairDown,fixStimulus.threshold,fixStimulus.stairStepSize,fixStimulus.stairUseLevitt);
-fixStimulus.staircase.minThreshold = 0;
-fixStimulus.staircase.maxThreshold = 1;
+% % init the staircase
+% fixStimulus.staircase = upDownStaircase(fixStimulus.stairUp,fixStimulus.stairDown,fixStimulus.threshold,fixStimulus.stairStepSize,fixStimulus.stairUseLevitt);
+% fixStimulus.staircase.minThreshold = 0;
+% fixStimulus.staircase.maxThreshold = 1;
+
+% init a 2 down 1 up staircase
+% if initStair == 1 | ieNotDefined('stimulus.stair{1}.threshold') | ieNotDefined('stimulus.stair{2}.threshold')
+%     disp(sprintf('\nATTENTION: Initalizing new staircase: threshold1 = %0.2f, threshold2 = %0.2f\n', threshStair1, threshStair2));
+fixStimulus.stair{1} = upDownStaircase(1,2,fixStimulus.threshStair1,fixStimulus.stairStepSize,1);
+fixStimulus.stair{1}.minThreshold = 0;
+fixStimulus.stair{2} = upDownStaircase(1,2,fixStimulus.threshStair2,fixStimulus.stairStepSize,1);
+fixStimulus.stair{2}.minThreshold = 0;
+% else
+%     disp(sprintf('\nATTENTION: Continuing old staircase: threshold1 = %0.2f, threshold2 = %0.2f\n', stimulus.stair{1}.threshold, stimulus.stair{2}.threshold));
+% end
+
+
 
 % init the task
 [task{1}, myscreen] = initTask(task{1},myscreen,@fixStartSegmentCallback,@fixDrawStimulusCallback,@fixTrialResponseCallback,@fixTrialStartCallback);
@@ -534,11 +552,16 @@ task{1}.incorrect = 0;
 function [task, myscreen] = fixTrialStartCallback(task, myscreen)
 
 global fixStimulus;
+
 % choose stimulus interval
 task.thistrial.sigInterval = 1+(rand > 0.5);
+
+% which staircase will be used this trial
+fixStimulus.whichStair = round(rand)+1;
+
 if fixStimulus.verbose
-    ['trial = ' num2str(task.trialnum) ' threshold = ' num2str(fixStimulus.threshold) ' sig = ' num2str(task.thistrial.sigInterval)]
-%   disp(sprintf('sigint = %i threshold = %0.2f',task.thistrial.sigInterval,fixStimulus.threshold));
+    disp(['trial = ' num2str(task.trialnum) ' stair = ' num2str(fixStimulus.whichStair) ' threshold = ' num2str(fixStimulus.stair{fixStimulus.whichStair}.threshold) ' sig = ' num2str(task.thistrial.sigInterval)]);
+    %   disp(sprintf('sigint = %i threshold = %0.2f',task.thistrial.sigInterval,fixStimulus.threshold));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -549,10 +572,10 @@ function [task, myscreen] = fixStartSegmentCallback(task, myscreen)
 global fixStimulus;
 
 if isfield(fixStimulus,'displayText')
-  % delete the texture
-  if ~isempty(fixStimulus.displayText)
-    mglDeleteTexture(fixStimulus.displayText);
-  end
+    % delete the texture
+    if ~isempty(fixStimulus.displayText)
+        mglDeleteTexture(fixStimulus.displayText);
+    end
 end
 fixStimulus.displayText = [];
 
@@ -561,32 +584,33 @@ whichInterval = find(task.thistrial.thisseg == [1 3]);%[2 4]);
 
 % if this is the signal interval
 if ~isempty(whichInterval)
-  if task.thistrial.sigInterval == whichInterval
-    fixStimulus.thisStrength = (1-(fixStimulus.pedestal+fixStimulus.threshold));
-  else
-    fixStimulus.thisStrength = (1-fixStimulus.pedestal);
-  end
-  fixStimulus.thisColor = fixStimulus.stimColor*fixStimulus.thisStrength;
-  % write out what the strength is
-  myscreen = writeTrace(fixStimulus.thisStrength,task.fixStairTrace,myscreen);
-% if this is the response interval
+    if task.thistrial.sigInterval == whichInterval
+        %     fixStimulus.thisStrength = (1-(fixStimulus.pedestal+fixStimulus.threshold));
+        fixStimulus.thisStrength = (1-(fixStimulus.pedestal+fixStimulus.stair{fixStimulus.whichStair}.threshold));
+    else
+        fixStimulus.thisStrength = (1-fixStimulus.pedestal);
+    end
+    fixStimulus.thisColor = fixStimulus.stimColor*fixStimulus.thisStrength;
+    % write out what the strength is
+    myscreen = writeTrace(fixStimulus.thisStrength,task.fixStairTrace,myscreen);
+    % if this is the response interval
 elseif task.thistrial.thisseg == 5%6
-  fixStimulus.thisColor = fixStimulus.responseColor;
-% if this is the inter stimulus interval
+    fixStimulus.thisColor = fixStimulus.responseColor;
+    % if this is the inter stimulus interval
 else
-  fixStimulus.thisColor = fixStimulus.interColor;
-  myscreen = writeTrace(0,task.fixStairTrace,myscreen);
+    fixStimulus.thisColor = fixStimulus.interColor;
+    myscreen = writeTrace(0,task.fixStairTrace,myscreen);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function that gets called every frame udpate to draw the fixation 
+% function that gets called every frame udpate to draw the fixation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [task, myscreen] = fixDrawStimulusCallback(task, myscreen)
 
 global fixStimulus;
 
 if ~isempty(fixStimulus.displayText)
-  mglBltTexture(fixStimulus.displayText,fixStimulus.displayTextLoc);
+    mglBltTexture(fixStimulus.displayText,fixStimulus.displayTextLoc);
 end
 mglGluDisk(fixStimulus.pos(1),fixStimulus.pos(2),fixStimulus.diskSize*[1 1],myscreen.background,60);
 
@@ -608,24 +632,30 @@ task.correctResponse(task.trialnum) = task.thistrial.sigInterval;
 task.correctness(task.trialnum) = 2*response(1)-1;%1 or -1
 
 if response
-  % set to correct fixation color
-  fixStimulus.thisColor = fixStimulus.correctColor;
-  % set trace to 2 to indicate correct response
-  myscreen = writeTrace(2,task.fixStairTrace,myscreen);
-  % and update correct count
-  task.correct = task.correct+1;
-
+    % set to correct fixation color
+    fixStimulus.thisColor = fixStimulus.correctColor;
+    % set trace to 2 to indicate correct response
+    myscreen = writeTrace(2,task.fixStairTrace,myscreen);
+    % and update correct count
+    task.correct = task.correct+1;
+    if fixStimulus.verbose
+        disp('YES');
+    end
 else
-  % set to incorrect fixation color
-  fixStimulus.thisColor = fixStimulus.incorrectColor;
-  % set trace to -2 to indicate incorrect response
-  myscreen = writeTrace(-2,task.fixStairTrace,myscreen);
-  % and update incorrect count
-  task.incorrect = task.incorrect+1;
+    % set to incorrect fixation color
+    fixStimulus.thisColor = fixStimulus.incorrectColor;
+    % set trace to -2 to indicate incorrect response
+    myscreen = writeTrace(-2,task.fixStairTrace,myscreen);
+    % and update incorrect count
+    task.incorrect = task.incorrect+1;
+    if fixStimulus.verbose
+        disp('NO');
+    end
 end
 
 % update staircase
 if fixStimulus.useStaircase
-    fixStimulus.staircase = upDownStaircase(fixStimulus.staircase,response);
-    fixStimulus.threshold = fixStimulus.staircase.threshold;
+    fixStimulus.stair{fixStimulus.whichStair} = upDownStaircase(fixStimulus.stair{fixStimulus.whichStair}, 1);
+    %     fixStimulus.staircase = upDownStaircase(fixStimulus.staircase,response);
+    %     fixStimulus.threshold = fixStimulus.staircase.threshold;
 end
