@@ -3,7 +3,10 @@
 %      usage: rwdStim('rewardType=''H''','runNum=1','useStaircase=1','currBal=30','numTrials=15','displayName=''rm315''', 'fixThresh=0.2');
 %         by: zvi roth
 %       date: 10/02/2018
-%    purpose: measure arousal effect on stimulus responses
+%    purpose: measure arousal effect on stimulus responses.
+%                 Experiment is different for first run and for all subsequent runs.
+%                 First run uses 2 staircases, has feedback, and reward is 0.
+%                 Subsequent runs have a fixed threshold, no feedback, and pay a reward.    
 
 
 % getStimvolFromVarname('orientation', s.myscreen, s.task{2})
@@ -35,6 +38,10 @@ end
 if ieNotDefined('useStaircase'), useStaircase = 1; end
 if ieNotDefined('threshStair1'), threshStair1 = 0; end
 if ieNotDefined('threshStair2'), threshStair2 = 0.3; end
+if useStaircase==0
+    threshStair1 = (threshStair1+threshStair2)/2;
+    threshStair2 = threshStair1;
+end
 interTime = 0.7;
 stimTime = 0.3;
 responseTime=1;
@@ -45,7 +52,7 @@ if ieNotDefined('trialLen'),trialLen = 18;end %in seconds
 if ieNotDefined('frameLen'),frameLen = 0.25; end
 if ieNotDefined('innerEdge'),innerEdge = 1.3; end
 if ieNotDefined('outerEdge'),outerEdge = 25; end
-if ieNotDefined('rewardType'), rewardType = 'H'; end
+if ieNotDefined('rewardType'), rewardType = 'L'; end
 % if ieNotDefined('rewardValue'), rewardValue = 1.0; end %max reward per trial. replaces incr
 if ieNotDefined('runNum'), runNum = 1; end
 if ieNotDefined('probRwd'), probRwd = 0; end
@@ -60,10 +67,12 @@ incrRwdH = 0.05;%reward increases on every high reward run
 initRwdL = 0.09;%reward for first low reward run
 initRwdH = 1.0;%reward for first high reward run
 
-if rewardType == 'H'
-    rewardValue = initRwdH + incrRwdH * runNum/2;
+if runNum==1
+    rewardValue = 0;
+elseif rewardType == 'H'
+    rewardValue = initRwdH + incrRwdH * (runNum-1)/2;
 elseif rewardType == 'L'
-    rewardValue = initRwdL + incrRwdL * runNum/2;
+    rewardValue = initRwdL + incrRwdL * (runNum-1)/2;
     rewardValue = min(rewardValue,0.01);%don't want to reach zero
 end
 
@@ -125,6 +134,13 @@ fixStimulus.trialTime = trialLen;%same trial length for both tasks
 fixStimulus.waitForBacktick = waitForBacktick;
 fixStimulus.fixWidth = 1;
 fixStimulus.fixLineWidth = 3;
+if stimulus.runNum>1
+   fixStimulus.incorrectColor = [0 1 1];
+   fixStimulus.correctColor = [0 1 1];
+else
+   fixStimulus.incorrectColor = [0.8 0 0];
+   fixStimulus.correctColor = [0 0.8 0];
+end
 
 [task{1} myscreen] = myFixStairInitTask(myscreen);
 task{1}{1}.numTrials = numTrials;
@@ -560,7 +576,7 @@ task.thistrial.sigInterval = 1+(rand > 0.5);
 fixStimulus.whichStair = round(rand)+1;
 
 if fixStimulus.verbose
-    disp(['trial = ' num2str(task.trialnum) ' stair = ' num2str(fixStimulus.whichStair) ' threshold = ' num2str(fixStimulus.stair{fixStimulus.whichStair}.threshold) ' sig = ' num2str(task.thistrial.sigInterval)]);
+    disp(['trial = ' num2str(task.trialnum) ' stair = ' num2str(fixStimulus.whichStair) ' threshold = ' num2str(fixStimulus.stair{fixStimulus.whichStair}.threshold,'%.2f') ' sig = ' num2str(task.thistrial.sigInterval)]);
     %   disp(sprintf('sigint = %i threshold = %0.2f',task.thistrial.sigInterval,fixStimulus.threshold));
 end
 
