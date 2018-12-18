@@ -55,17 +55,22 @@ if ieNotDefined('outerEdge'),outerEdge = 25; end
 if ieNotDefined('rewardType'), rewardType = 'L'; end
 % if ieNotDefined('rewardValue'), rewardValue = 1.0; end %max reward per trial. replaces incr
 if ieNotDefined('runNum'), runNum = 1; end
-if ieNotDefined('probRwd'), probRwd = 0; end
+if ieNotDefined('probRwd'), probRwd = 1; end
 if ieNotDefined('currBal'), currBal = 30; end
 % if ieNotDefined('fixThresh'), fixThresh = 0.2; end
 if ieNotDefined('numTRs'), numTRs = 204; end
 TR=1.5;
 if ieNotDefined('numTrials'), numTrials = ceil(TR*numTRs/trialLen); end
 
+% incrRwdL = -0.01;%reward decreases on every low reward run
+% incrRwdH = 0.05;%reward increases on every high reward run
+% initRwdL = 0.09;%reward for first low reward run
+% initRwdH = 1.0;%reward for first high reward run
+
 incrRwdL = -0.01;%reward decreases on every low reward run
-incrRwdH = 0.05;%reward increases on every high reward run
-initRwdL = 0.09;%reward for first low reward run
-initRwdH = 1.0;%reward for first high reward run
+incrRwdH = 0.04;%reward increases on every high reward run
+initRwdL = 0.06;%reward for first low reward run
+initRwdH = 0.5;%reward for first high reward run
 
 if runNum==1
     rewardValue = 0;
@@ -73,7 +78,7 @@ elseif rewardType == 'H'
     rewardValue = initRwdH + incrRwdH * (runNum-1)/2;
 elseif rewardType == 'L'
     rewardValue = initRwdL + incrRwdL * (runNum-1)/2;
-    rewardValue = min(rewardValue,0.01);%don't want to reach zero
+    rewardValue = max(rewardValue,0.01);%don't want to reach zero
 end
 
 global stimulus;
@@ -239,7 +244,7 @@ end
 %calculate reward for this run
 if probRwd
     randP = randperm(task{1}{1}.numTrials);
-    rwd = task{1}{1}.correctness(randP(1)) * task{1}{1}.numTrials * stimulus.rewardValue;%incr;
+    rwd = task{1}{1}.correctness(randP(1)) * task{1}{1}.numTrials * stimulus.rewardValue;
 else
     rwd = sum(task{1}{1}.correctness) * stimulus.rewardValue;
 end
@@ -267,6 +272,7 @@ disp(['rwdStim(''rewardType=''''' newRewardType ...
     ''''''',''runNum=' num2str(newRunNum) ...
     ''',''useStaircase=0' ...
     ''',''currBal=' num2str(stimulus.currBal) ...
+    ''',''probRwd=' num2str(stimulus.probRwd) ...
     ''',''numTrials=' num2str(task{1}{1}.numTrials) ...
     ''',''displayName=''''' myscreen.displayName ...
     ''''''', ''fixThresh1=' num2str(fixStimulus.threshStair1) ...
