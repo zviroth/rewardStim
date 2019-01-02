@@ -51,12 +51,11 @@ if ieNotDefined('stimLen'),stimLen = 2*interTime + 2*stimTime + responseTime;end
 if ieNotDefined('trialLen'),trialLen = 18;end %in seconds
 if ieNotDefined('frameLen'),frameLen = 0.25; end
 if ieNotDefined('innerEdge'),innerEdge = 1.3; end
-if ieNotDefined('outerEdge'),outerEdge = 25; end
+if ieNotDefined('outerEdge'),outerEdge = 50; end
 if ieNotDefined('rewardType'), rewardType = 'L'; end
-% if ieNotDefined('rewardValue'), rewardValue = 1.0; end %max reward per trial. replaces incr
 if ieNotDefined('runNum'), runNum = 1; end
-if ieNotDefined('probRwd'), probRwd = 1; end
-if ieNotDefined('currBal'), currBal = 30; end
+if ieNotDefined('probRwd'), probRwd = 0; end
+if ieNotDefined('currBal'), currBal = 00; end
 % if ieNotDefined('fixThresh'), fixThresh = 0.2; end
 if ieNotDefined('numTRs'), numTRs = 204; end
 TR=1.5;
@@ -152,7 +151,7 @@ task{1}{1}.numTrials = numTrials;
 % task{1}{1}.nTrials = numTrials;
 task{1}{1}.response = zeros(numTrials,1);
 task{1}{1}.correctResponse = zeros(numTrials,1);
-task{1}{1}.correctness = zeros(numTrials,1);
+task{1}{1}.correctness = zeros(numTrials,1) - 1;
 %both tasks should wait for backtick to begin
 task{1}{1}.waitForBacktick = waitForBacktick;
 task{2}{1}.waitForBacktick = waitForBacktick;
@@ -166,6 +165,8 @@ task{2}{1}.synchToVol = zeros(size(seglen));
 if waitForBacktick
     task{2}{1}.synchToVol(end) = 1;
 end
+
+
 
 orientations = linspace(0, 180, 7);
 orientations = orientations(1:end-1);
@@ -186,6 +187,8 @@ task{2}{1}.collectEyeData = true;
 for phaseNum = 1:length(task{2})
     [task{2}{phaseNum} myscreen] = initTask(task{2}{phaseNum},myscreen,@startSegmentCallback,@screenUpdateCallback,@responseCallback);
 end
+% myscreen.imageWidth = myscreen.imageWidth+5;
+
 
 % do our initialization which creates the gratings
 stimulus = myInitStimulus(stimulus,myscreen,task);
@@ -244,10 +247,13 @@ end
 %calculate reward for this run
 if probRwd
     randP = randperm(task{1}{1}.numTrials);
-    rwd = task{1}{1}.correctness(randP(1)) * task{1}{1}.numTrials * stimulus.rewardValue;
+    randRun = randP(1)
+    rwd = task{1}{1}.correctness(randRun) * task{1}{1}.numTrials * stimulus.rewardValue;
+    rwd = task{1}{1}.correctness(randRun) * task{1}{1}.numTrials * stimulus.rewardValue;
 else
     rwd = sum(task{1}{1}.correctness) * stimulus.rewardValue;
 end
+
 stimulus.currBal = stimulus.currBal + rwd;
 disp(sprintf('\n% --------------------------------------------- %\n'));
 
@@ -275,12 +281,11 @@ disp(['rwdStim(''rewardType=''''' newRewardType ...
     ''',''probRwd=' num2str(stimulus.probRwd) ...
     ''',''numTrials=' num2str(task{1}{1}.numTrials) ...
     ''',''displayName=''''' myscreen.displayName ...
-    ''''''', ''fixThresh1=' num2str(fixStimulus.threshStair1) ...
-    ''', ''fixThresh2=' num2str(fixStimulus.threshStair2) ''');']);
+    ''''''', ''threshStair1=' num2str(fixStimulus.stair{1}.threshold) ...
+    ''', ''threshStair2=' num2str(fixStimulus.stair{2}.threshold) ''');']);
 
 
 disp(sprintf('\n% --------------------------------------------- %\n'));
-
 
 
 
@@ -289,9 +294,13 @@ mglClearScreen;
 mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
 % text = sprintf('You got %0.2f%% correct', stimulus.percentCorrect*100);
 % mglTextDraw(text,[0 3]);
-text = sprintf('You gained');
+if rwd<0
+    text = sprintf('You lost');
+else
+    text = sprintf('You gained');
+end
 mglTextDraw(text,[0 3]);
-text = sprintf('$%0.2f', rwd);
+text = sprintf('$%0.2f', abs(rwd));
 mglTextSet('Helvetica',70,[1 1 1],0,0,0,0,0,0,0);
 mglTextDraw(text,[0 1.5]);
 text = sprintf('in this run');
@@ -402,8 +411,10 @@ stimulus.numPhases = 16;
 stimulus.phases = 0:(360-0)/stimulus.numPhases:360;
 
 % size of stimulus
-stimulus.height = 0.5*floor(myscreen.imageHeight/0.5)+2;
-stimulus.width = stimulus.height;
+% stimulus.height = 0.5*floor(myscreen.imageHeight/0.5)+2;
+% stimulus.width = 0.5*floor(myscreen.imageWidth/0.5)+2;
+stimulus.height = 0.5*floor(myscreen.imageHeight/0.5)+6;
+stimulus.width = 0.5*floor(myscreen.imageWidth/0.5);
 
 % size of annulus
 % stimulus.outer = stimulus.height;
@@ -535,6 +546,7 @@ task{1}.synchToVol = zeros(size(task{1}.seglen));
 if fixStimulus.waitForBacktick
     task{1}.synchToVol(end) = 1;
 end
+
 
 
 [task{1}, myscreen] = addTraces(task{1}, myscreen, 'segment', 'phase', 'response');
@@ -679,5 +691,5 @@ end
 if fixStimulus.useStaircase
     fixStimulus.stair{fixStimulus.whichStair} = upDownStaircase(fixStimulus.stair{fixStimulus.whichStair}, 1);
     %     fixStimulus.staircase = upDownStaircase(fixStimulus.staircase,response);
-    %     fixStimulus.threshold = fixStimulus.staircase.threshold;
+%         fixStimulus.threshold = fixStimulus.stair{1}.threshold;
 end
