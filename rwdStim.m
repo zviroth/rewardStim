@@ -37,9 +37,10 @@ if ieNotDefined('waitForBacktick')
 end
 if ieNotDefined('useStaircase'), useStaircase = 1; end
 if ieNotDefined('threshStair1'), threshStair1 = 0; end
-if ieNotDefined('threshStair2'), threshStair2 = 0.3; end
+if ieNotDefined('threshStair2'), threshStair2 = 0.2; end
 if useStaircase==0
     threshStair1 = (threshStair1+threshStair2)/2;
+    threshStair1 = max(threshStair1, 0.05);%threshold must be >0
     threshStair2 = threshStair1;
 end
 interTime = 0.7;
@@ -174,7 +175,8 @@ orientations = orientations(1:end-1);
 % stimulus properties, block randomized
 task{2}{1}.randVars.block.contrast = logspace(-0.7,0,5);
 % task{2}{1}.randVars.block.spatFreq = [0.15 0.3 0.6 1.2 2.4 4.8];
-task{2}{1}.randVars.block.spatFreq = logspace(-0.8,0.5,5);
+% task{2}{1}.randVars.block.spatFreq = logspace(-0.8,0.5,5);
+task{2}{1}.randVars.block.spatFreq = logspace(-0.3,0.5,5);
 % task{2}{1}.randVars.block.orientation = 1:length(orientations);
 task{2}{1}.randVars.block.nullTrial = [0 0 0 1]; %determines proportion of null trials
 
@@ -199,6 +201,12 @@ stimulus.orientations = orientations;
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myscreen = eyeCalibDisp(myscreen);
 
+%gamma correction
+% load('op4_labLaptop_2018-12-21.mat','LumValues','lut','info');
+load('op4_labLaptop_2018-12-21.mat','lut');
+% load('op4_zvi_laptop_2018-12-12.mat','lut');
+mglSetGammaTable(lut.R,lut.G,lut.B);
+
 
 %initial screen
 mglClearScreen;
@@ -216,7 +224,7 @@ mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
 mglTextDraw(text,[0 -2]);
 mglFlush;
 
-mglWaitSecs(3);
+mglWaitSecs(10);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main display loop
@@ -295,7 +303,7 @@ mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
 % text = sprintf('You got %0.2f%% correct', stimulus.percentCorrect*100);
 % mglTextDraw(text,[0 3]);
 if rwd<0
-    text = sprintf('You lost');
+    text = sprintf('You LOST');
 else
     text = sprintf('You gained');
 end
@@ -307,9 +315,9 @@ text = sprintf('in this run');
 mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
 mglTextDraw(text,[0 0]);
 text = sprintf('Current Balance: $%0.2f',stimulus.currBal);
-mglTextDraw(text,[0 -4]);
+mglTextDraw(text,[0 -2]);
 mglFlush;
-mglWaitSecs(3);
+mglWaitSecs(10);
 
 
 % if we got here, we are at the end of the experiment
