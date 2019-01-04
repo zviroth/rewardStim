@@ -14,7 +14,7 @@
 % mrPrintSurf
 
 function [] = rwdStim(varargin)
-
+pauseDuration = 8;
 % check arguments
 if ~any(nargin == [0:10])
     help otopySzSF
@@ -203,9 +203,10 @@ myscreen = eyeCalibDisp(myscreen);
 
 %gamma correction
 % load('op4_labLaptop_2018-12-21.mat','LumValues','lut','info');
-load('op4_labLaptop_2018-12-21.mat','lut');
 % load('op4_zvi_laptop_2018-12-12.mat','lut');
-mglSetGammaTable(lut.R,lut.G,lut.B);
+
+% load('op4_labLaptop_2018-12-21.mat','lut');
+% mglSetGammaTable(lut.R,lut.G,lut.B);
 
 
 %initial screen
@@ -224,7 +225,7 @@ mglTextSet('Helvetica',50,[1 1 1],0,0,0,0,0,0,0);
 mglTextDraw(text,[0 -2]);
 mglFlush;
 
-mglWaitSecs(10);
+mglWaitSecs(pauseDuration);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main display loop
@@ -317,7 +318,7 @@ mglTextDraw(text,[0 0]);
 text = sprintf('Current Balance: $%0.2f',stimulus.currBal);
 mglTextDraw(text,[0 -2]);
 mglFlush;
-mglWaitSecs(10);
+mglWaitSecs(pauseDuration);
 
 
 % if we got here, we are at the end of the experiment
@@ -421,7 +422,7 @@ stimulus.phases = 0:(360-0)/stimulus.numPhases:360;
 % size of stimulus
 % stimulus.height = 0.5*floor(myscreen.imageHeight/0.5)+2;
 % stimulus.width = 0.5*floor(myscreen.imageWidth/0.5)+2;
-stimulus.height = 0.5*floor(myscreen.imageHeight/0.5)+6;
+stimulus.height = 0.5*floor(myscreen.imageHeight/0.5)+18;
 stimulus.width = 0.5*floor(myscreen.imageWidth/0.5);
 
 % size of annulus
