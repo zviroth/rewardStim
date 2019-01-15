@@ -1,3 +1,6 @@
+% CHECK NULL TRIALS, MINIMUM THRESHOLD AND PAUSE DURATION!!
+
+
 %
 %        $Id: rwdStim.m,v 1.2 2016/01/22 15:30:22 eli Exp $
 %      usage: rwdStim('rewardType=''H''','runNum=1','useStaircase=1','currBal=30','numTrials=15','displayName=''rm315''', 'fixThresh=0.2');
@@ -40,7 +43,7 @@ if ieNotDefined('threshStair1'), threshStair1 = 0; end
 if ieNotDefined('threshStair2'), threshStair2 = 0.2; end
 if useStaircase==0
     threshStair1 = (threshStair1+threshStair2)/2;
-    threshStair1 = max(threshStair1, 0.05);%threshold must be >0
+    threshStair1 = max(threshStair1, 0.03);%threshold must be >0
     threshStair2 = threshStair1;
 end
 interTime = 0.7;
@@ -126,18 +129,16 @@ myscreen = initScreen(myscreen);
 global fixStimulus
 fixStimulus.useStaircase = useStaircase;
 fixStimulus.diskSize = 0;
-fixStimulus.fixWidth = 0.75;
-fixStimulus.fixLineWidth = 3;
 fixStimulus.stairStepSize = 0.05;
 fixStimulus.threshStair1 = threshStair1;
 fixStimulus.threshStair2 = threshStair2;
-% fixStimulus.threshold = fixThresh;
+% fixStimulus.threshold = fixThresh;mglC
 fixStimulus.responseTime = responseTime;
 fixStimulus.stimTime = stimTime;
 fixStimulus.interTime = interTime;
 fixStimulus.trialTime = trialLen;%same trial length for both tasks
 fixStimulus.waitForBacktick = waitForBacktick;
-fixStimulus.fixWidth = 1;
+fixStimulus.fixWidth = 0.7;
 fixStimulus.fixLineWidth = 3;
 if stimulus.runNum>1
    fixStimulus.incorrectColor = [0 1 1];
@@ -160,7 +161,9 @@ task{2}{1}.waitForBacktick = waitForBacktick;
 %each segment is a different phase. Entire trial is a single orientation,
 %contrast,and spatial frequency.
 seglen = [stimulus.frameLen * ones(1,stimulus.stimLen/stimulus.frameLen) stimulus.trialLen-stimulus.stimLen];
-seglen(end) = stimulus.trialLen-stimulus.stimLen - 0.5;%shorten blank segment length to be sure we finish before the trigger
+if waitForBacktick
+    seglen(end) = stimulus.trialLen-stimulus.stimLen - 0.5;%shorten blank segment length to be sure we finish before the trigger
+end
 task{2}{1}.seglen = seglen;
 task{2}{1}.synchToVol = zeros(size(seglen));
 if waitForBacktick
@@ -178,7 +181,7 @@ task{2}{1}.randVars.block.contrast = logspace(-0.7,0,5);
 % task{2}{1}.randVars.block.spatFreq = logspace(-0.8,0.5,5);
 task{2}{1}.randVars.block.spatFreq = logspace(-0.3,0.5,5);
 % task{2}{1}.randVars.block.orientation = 1:length(orientations);
-task{2}{1}.randVars.block.nullTrial = [0 0 0 1]; %determines proportion of null trials
+task{2}{1}.randVars.block.nullTrial = [1 1 1 1]; %determines proportion of null trials
 
 task{2}{1}.random = 0;
 task{2}{1}.numTrials = numTrials;
@@ -533,7 +536,7 @@ if ~isfield(fixStimulus,'stimTime'); fixStimulus.stimTime = 0.4; end
 if ~isfield(fixStimulus,'interTime'); fixStimulus.interTime = 0.8; end
 if ~isfield(fixStimulus,'diskSize'); fixStimulus.diskSize = 1; end
 if ~isfield(fixStimulus,'pos'); fixStimulus.pos = [0 0]; end
-if ~isfield(fixStimulus,'fixWidth'); fixStimulus.fixWidth = 1; end
+if ~isfield(fixStimulus,'fixWidth'); fixStimulus.fixWidth = 0.7; end
 if ~isfield(fixStimulus,'fixLineWidth'); fixStimulus.fixLineWidth = 3; end
 if ~isfield(fixStimulus,'trainingMode'); fixStimulus.trainingMode = 0;end
 if ~isfield(fixStimulus,'verbose'); fixStimulus.verbose = 1;end
