@@ -10,12 +10,14 @@
 %                 Experiment is different for first run and for all subsequent runs.
 %                 First run uses 2 staircases, has feedback, and reward is 0.
 %                 Subsequent runs have a fixed threshold, no feedback, and pay a reward.    
+% rwdRapid('rewardType=''H''','runNum=2','useStaircase=0','currBal=0','numTrials=17','displayName=''rm315''', 'threshStair1=0.1', 'threshStair2=0.1');
 
 
 function [] = rwdRapid(varargin)
 clear fixStimulus
-pauseDuration = 1;
-minimumThreshold = 0.1;
+pauseDuration = 0;
+minThreshold = 0.2;
+maxThreshold = 0.5;
 nullTrials = [0 0 0 1];
 % check arguments
 if ~any(nargin == [0:10])
@@ -29,7 +31,7 @@ getArgs(varargin, [], 'verbose=0');
 % set default parameters
 % if ieNotDefined('direction'),direction = -1;end
 
-if ieNotDefined('displayName'), displayName = 'laptop'; end
+if ieNotDefined('displayName'), displayName = 'rm315'; end
 if ieNotDefined('waitForBacktick')
     if strcmp(displayName, 'rm315') || strcmp(displayName, 'laptop')
         waitForBacktick = 0;
@@ -38,17 +40,17 @@ if ieNotDefined('waitForBacktick')
     end
 end
 if ieNotDefined('useStaircase'), useStaircase = 1; end
-if ieNotDefined('threshStair1'), threshStair1 = 0.3; end
-if ieNotDefined('threshStair2'), threshStair2 = 0.6; end
+if ieNotDefined('threshStair1'), threshStair1 = 0.1; end
+if ieNotDefined('threshStair2'), threshStair2 = maxThreshold; end
 if useStaircase==0
     threshStair1 = (threshStair1+threshStair2)/2;
-    threshStair1 = max(threshStair1, minimumThreshold);%threshold must be >0
+    threshStair1 = max(threshStair1, minThreshold);%threshold must be >0
     threshStair2 = threshStair1;
 end
 
 
 interTime = 3;
-cueTime = 0.1;
+cueTime = 0.15;
 responseTime=2;
 stimLen = interTime;%should be a multiple of frameLen
 % if ieNotDefined('stimLen'),stimLen = 2*interTime + 2*stimTime + responseTime;end %should be equal to fixation trial length
@@ -67,11 +69,6 @@ if ieNotDefined('numTRs'), numTRs = 204; end
 TR=1.5;
 if ieNotDefined('numTrials'), numTrials = ceil(TR*numTRs/trialLen); end
 
-
-% incrRwdL = -0.01;%reward decreases on every low reward run
-% incrRwdH = 0.05;%reward increases on every high reward run
-% initRwdL = 0.09;%reward for first low reward run
-% initRwdH = 1.0;%reward for first high reward run
 
 incrRwdL = -0.01;%reward decreases on every low reward run
 incrRwdH = 0.04;%reward increases on every high reward run
@@ -144,7 +141,7 @@ fixStimulus.digitColor = [1 1 1]; %digit color
 fixStimulus.digitSizeX = 0.25;
 fixStimulus.digitSizeY = 0.2;
 fixStimulus.digitWidth = 2;
-fixStimulus.cueSize =0.8; %circle size in degrees
+fixStimulus.cueSize =0.55; %circle size in degrees
 fixStimulus.cueWidth =0.07; %circle width
 fixStimulus.cueColor = [0 1 1];
 fixStimulus.responseColor = [1 1 0];
@@ -183,13 +180,16 @@ end
 
 
 orientations = linspace(0, 180, 7);
-orientations = orientations(1:end-1);
+stimulus.orientations = orientations(1:end-1);
 
 % stimulus properties, block randomized
-task{2}{1}.randVars.block.contrast = logspace(-0.7,0,5);
-% task{2}{1}.randVars.block.spatFreq = [0.15 0.3 0.6 1.2 2.4 4.8];
-% task{2}{1}.randVars.block.spatFreq = logspace(-0.8,0.5,5);
-task{2}{1}.randVars.block.spatFreq = logspace(-0.3,0.5,5);
+stimulus.contrasts = logspace(-0.7,0,5);
+task{2}{1}.randVars.block.contrast = 1:length(stimulus.contrasts);
+% task{2}{1}.randVars.block.contrast = logspace(-0.7,0,5);
+stimulus.freqs = logspace(-0.3,0.5,5);
+task{2}{1}.randVars.block.spatFreq = 1:length(stimulus.freqs);
+% task{2}{1}.randVars.block.spatFreq = logspace(-0.3,0.5,5);
+
 % task{2}{1}.randVars.block.orientation = 1:length(orientations);
 task{2}{1}.randVars.block.nullTrial = nullTrials; %determines proportion of null trials
 
@@ -334,37 +334,20 @@ myscreen = endTask(myscreen,task);
 function [task, myscreen] = startSegmentCallback(task, myscreen)
 global stimulus;
 
+% if ~task.thistrial.nullTrial
 
-% randomize the current phase of the stimulus
-newPhase = ceil(rand(1)*stimulus.numPhases);
-while stimulus.phaseNum == newPhase
-    newPhase = ceil(rand(1)*stimulus.numPhases);
+
+if any(task.thistrial.thisseg == stimulus.stimulusSegments) && (~task.thistrial.nullTrial)
+    icontrast = task.thistrial.contrast;
+    ifreq = task.thistrial.spatFreq;
+    newOri = stimulus.oriNum;
+    while stimulus.oriNum == newOri
+        newOri = ceil(rand(1)*length(stimulus.orientations));
+    end
+    stimulus.oriNum = newOri;
+    stimulus.tex = stimulus.allGratings{icontrast,ifreq};
+    stimulus.rotation = stimulus.orientations(newOri);
 end
-stimulus.phaseNum = newPhase;
-% randomize the current orientation of the stimulus
-numOrientations = length(stimulus.orientations);
-newOri = ceil(rand(1)*numOrientations);
-while stimulus.oriNum == newOri
-    newOri = ceil(rand(1)*numOrientations);
-end
-stimulus.oriNum = newOri;
-
-% make the grating
-% grating = mglMakeGrating(stimulus.width/stimulus.sFac, stimulus.height/stimulus.sFac, task.thistrial.spatFreq*stimulus.sFac, ...
-%     task.thistrial.orientation, stimulus.phases(newPhase), stimulus.pixRes, stimulus.pixRes);
-grating = mglMakeGrating(stimulus.width/stimulus.sFac, stimulus.height/stimulus.sFac, task.thistrial.spatFreq*stimulus.sFac, ...
-    stimulus.orientations(newOri), stimulus.phases(newPhase), stimulus.pixRes, stimulus.pixRes);
-grating = grating*task.thistrial.contrast;
-
-% scale to range of display
-grating = 255*(grating+1)/2;
-
-% make it rgba
-grating = uint8(permute(repmat(grating, [1 1 4]), [3 1 2]));
-grating(4,:,:) = 256;
-
-% update the texture
-mglBindTexture(stimulus.tex, grating);
 
 if task.numTrials == task.trialnum && task.thistrial.thisseg==length(task.seglen)
     disp('last trial');
@@ -382,7 +365,7 @@ mglClearScreen;
 
 if any(task.thistrial.thisseg == stimulus.stimulusSegments) && (~task.thistrial.nullTrial)
     % draw the texture
-    mglBltTexture(stimulus.tex, [0 0 stimulus.height stimulus.height], 0, 0, 0);
+    mglBltTexture(stimulus.tex, [0 0 stimulus.height stimulus.height], 0, 0, stimulus.rotation);
     mglBltTexture(stimulus.innerMaskTex, [0 0 stimulus.height stimulus.height], 0, 0, 0);
     mglBltTexture(stimulus.outerMaskTex, [0 0 stimulus.height stimulus.height], 0, 0, 0);
     
@@ -467,6 +450,31 @@ stimulus.tex = mglCreateTexture(r,[],1);
 
 
 
+%create all of the gratings
+stimulus.contrasts = logspace(-0.7,0,5);
+task{2}{1}.randVars.block.contrast = 1:length(stimulus.contrasts);
+% task{2}{1}.randVars.block.contrast = logspace(-0.7,0,5);
+stimulus.freqs = logspace(-0.3,0.5,5);
+task{2}{1}.randVars.block.spatFreq = 1:length(stimulus.freqs);
+for icontrast = 1:length(stimulus.contrasts)
+    for ifreq=1:length(stimulus.freqs)
+        newPhase = ceil(rand(1)*stimulus.numPhases);
+        newOri = 1;
+        grating = mglMakeGrating(stimulus.width/stimulus.sFac, stimulus.height/stimulus.sFac, stimulus.freqs(ifreq)*stimulus.sFac, ...
+            stimulus.orientations(newOri), stimulus.phases(newPhase), stimulus.pixRes, stimulus.pixRes);
+        grating = grating*stimulus.contrasts(icontrast);
+        % scale to range of display
+        grating = 255*(grating+1)/2;
+        
+        % make it rgba
+        grating = uint8(permute(repmat(grating, [1 1 4]), [3 1 2]));
+        grating(4,:,:) = 256;
+        stimulus.allGratings{icontrast,ifreq} = mglCreateTexture(grating);
+    end
+end
+
+
+
 % fixStairInitTask.m
 %
 %        $Id$
@@ -474,12 +482,14 @@ stimulus.tex = mglCreateTexture(r,[],1);
 %         by: justin gardner
 %       date: 09/07/06
 %  copyright: (c) 2006 Justin Gardner (GPL see mgl/COPYING)
-%    purpose: Implements a fixation task. In this task, the fixation cross
-%             starts out cyan and then darkens twice. The fixation cross then
-%             turns yellow to indicate the response interval, and the subject
-%             is required to press 1 or 2 to indicate in which interval the cross
-%             appeared darker. The cross will then turn green or red to indicate
-%             correct or incorrect responses. The dimness of the target is
+%    purpose: Implements a fixation task. In this task, a stream of digits appears
+%             at the screen center. a blue circle flashes around fixation, signalling 
+%             to the subject to begin counting zeros, and 
+%             after a few seconds a yellow circle appears. 
+%             If 2 zeros were counted subject presses 2. Otherwise 
+%             subject presses 1.
+%             With feedback, the circle will then turn green or red to indicate
+%             correct or incorrect responses. The speed of the digits is
 %             controlled by a 2 down 1 up staircase to keep task difficulty
 %             the same.
 %
@@ -543,9 +553,6 @@ if ~isfield(fixStimulus,'cueContrast'); fixStimulus.cueContrast = 0.5; end
 
 if ~isfield(fixStimulus,'diskSize'); fixStimulus.diskSize = 1; end
 if ~isfield(fixStimulus,'pos'); fixStimulus.pos = [0 0]; end
-% if ~isfield(fixStimulus,'fixWidth'); fixStimulus.fixWidth = 0.7; end
-% if ~isfield(fixStimulus,'fixLineWidth'); fixStimulus.fixLineWidth = 3; end
-% if ~isfield(fixStimulus,'trainingMode'); fixStimulus.trainingMode = 0;end
 if ~isfield(fixStimulus,'verbose'); fixStimulus.verbose = 1;end
 
 
@@ -612,7 +619,7 @@ task.thistrial.SOA = fixStimulus.stair{fixStimulus.whichStair}.threshold;
 task.thistrial.ISI = task.thistrial.SOA/2;
 task.thistrial.numDigits = ceil(fixStimulus.trialLength/task.thistrial.SOA);
 task.thistrial.numDigitTypes = floor(fixStimulus.interTime/(task.thistrial.SOA*fixStimulus.targetDigitCount));
-task.thistrial.numDigitTypes = min(task.thistrial.numDigitTypes,10);
+task.thistrial.numDigitTypes = min(task.thistrial.numDigitTypes,9);
 
 numCueDigits = ceil((fixStimulus.cueTime*2+fixStimulus.interTime)/task.thistrial.SOA);%floor?
 badStream=1;
@@ -683,12 +690,6 @@ if trialDigitIndex > task.thistrial.digitIndex
 %     mglDeleteTexture(fixStimulus.displayText);
     task.thistrial.currentDigit = task.thistrial.digitStream(task.thistrial.digitIndex);
     task.thistrial.currentText = num2str(task.thistrial.currentDigit);
-
-%     %if this a target, and we're between the cues, we increase the target counter
-%     % what if the stimulus begins during the cue??
-%     if task.thistrial.currentDigit == fixStimulus.targetDigit && task.thistrial.thisseg <3 %<4
-%         task.thistrial.targetCounter = task.thistrial.targetCounter+1;
-%     end
 
     %if this is a new digit we start a digit timer to know when to stop presenting it
     task.thistrial.digitTimer = mglGetSecs;
