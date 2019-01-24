@@ -1,6 +1,5 @@
 % CHECK NULL TRIALS, MINIMUM THRESHOLD AND PAUSE DURATION!!
 
-
 %
 %        $Id: rwdRapid.m,v 1.0 2019/01/18 zvi
 %      usage: rwdRapid('rewardType=''H''','runNum=1','useStaircase=1','currBal=30','numTrials=15','displayName=''rm315''', 'fixThresh=0.2');
@@ -10,13 +9,11 @@
 %                 Experiment is different for first run and for all subsequent runs.
 %                 First run uses 2 staircases, has feedback, and reward is 0.
 %                 Subsequent runs have a fixed threshold, no feedback, and pay a reward.    
-% rwdRapid('rewardType=''H''','runNum=2','useStaircase=0','currBal=0','numTrials=17','displayName=''rm315''', 'threshStair1=0.1', 'threshStair2=0.1');
-
 
 function [] = rwdRapid(varargin)
 clear fixStimulus
 pauseDuration = 8;
-minThreshold = 0.2;
+minThreshold = 0.15;
 maxThreshold = 0.5;
 nullTrials = [0 0 0 1];
 % check arguments
