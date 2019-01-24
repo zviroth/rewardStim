@@ -15,7 +15,7 @@
 
 function [] = rwdRapid(varargin)
 clear fixStimulus
-pauseDuration = 0;
+pauseDuration = 8;
 minThreshold = 0.2;
 maxThreshold = 0.5;
 nullTrials = [0 0 0 1];
@@ -49,7 +49,7 @@ if useStaircase==0
 end
 
 
-interTime = 3;
+interTime = 2;
 cueTime = 0.15;
 responseTime=2;
 stimLen = interTime;%should be a multiple of frameLen
@@ -57,7 +57,7 @@ stimLen = interTime;%should be a multiple of frameLen
 %also, should be a multiple of frameLen
 
 if ieNotDefined('trialLen'),trialLen = 18;end %in seconds
-if ieNotDefined('frameLen'),frameLen = stimLen/6; end
+if ieNotDefined('frameLen'),frameLen = stimLen/4; end
 if ieNotDefined('innerEdge'),innerEdge = 1.3; end
 if ieNotDefined('outerEdge'),outerEdge = 50; end
 if ieNotDefined('rewardType'), rewardType = 'L'; end
@@ -207,7 +207,7 @@ end
 
 % do our initialization which creates the gratings
 stimulus = myInitStimulus(stimulus,myscreen,task);
-stimulus.orientations = orientations;
+% stimulus.orientations = orientations;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % run the eye calibration
@@ -347,6 +347,7 @@ if any(task.thistrial.thisseg == stimulus.stimulusSegments) && (~task.thistrial.
     stimulus.oriNum = newOri;
     stimulus.tex = stimulus.allGratings{icontrast,ifreq};
     stimulus.rotation = stimulus.orientations(newOri);
+    stimulus.rotation
 end
 
 if task.numTrials == task.trialnum && task.thistrial.thisseg==length(task.seglen)
@@ -396,7 +397,11 @@ stimulus.phases = 0:(360-0)/stimulus.numPhases:360;
 % stimulus.height = 0.5*floor(myscreen.imageHeight/0.5)+2;
 % stimulus.width = 0.5*floor(myscreen.imageWidth/0.5)+2;
 stimulus.height = 0.5*floor(myscreen.imageHeight/0.5)+18;
-stimulus.width = 0.5*floor(myscreen.imageWidth/0.5);
+stimulus.height = 0.5*floor(myscreen.imageHeight/0.5)+22;
+stimulus.width = stimulus.height;
+
+stimulus.width = 0.5*floor(myscreen.imageWidth/0.5)+7;
+stimulus.height = stimulus.width;
 
 % size of annulus
 % stimulus.outer = stimulus.height;
