@@ -1,8 +1,8 @@
 % CHECK NULL TRIALS, MINIMUM THRESHOLD AND PAUSE DURATION!!
-
+% rwdRapid('displayName=''rm315''')
 %
 %        $Id: rwdRapid.m,v 1.0 2019/01/18 zvi
-%      usage: rwdRapid('rewardType=''H''','runNum=1','useStaircase=1','currBal=30','numTrials=15','displayName=''rm315''', 'fixThresh=0.2');
+%      usage: rwdRapid('rewardType=''H''','runNum=1','useStaircase=1','currBal=0','numTrials=15','displayName=''rm315''', 'threshStair1=0.15','threshStair2=0.4');
 %         by: zvi roth
 %       date: 2019/01/18
 %    purpose: measure arousal effect on stimulus responses.
@@ -16,11 +16,6 @@ pauseDuration = 8;
 minThreshold = 0.15;
 maxThreshold = 0.5;
 nullTrials = [0 0 0 1];
-% check arguments
-if ~any(nargin == [0:10])
-    help otopySzSF
-    return
-end
 
 % % evaluate the input arguments
 getArgs(varargin, [], 'verbose=0');
@@ -28,7 +23,7 @@ getArgs(varargin, [], 'verbose=0');
 % set default parameters
 % if ieNotDefined('direction'),direction = -1;end
 
-if ieNotDefined('displayName'), displayName = 'rm315'; end
+if ieNotDefined('displayName'), displayName = '3tb'; end
 if ieNotDefined('waitForBacktick')
     if strcmp(displayName, 'rm315') || strcmp(displayName, 'laptop')
         waitForBacktick = 0;
@@ -47,13 +42,13 @@ end
 
 
 interTime = 2;
-cueTime = 0.15;
+cueTime = 0.5;
 responseTime=2;
 stimLen = interTime;%should be a multiple of frameLen
 % if ieNotDefined('stimLen'),stimLen = 2*interTime + 2*stimTime + responseTime;end %should be equal to fixation trial length
 %also, should be a multiple of frameLen
 
-if ieNotDefined('trialLen'),trialLen = 18;end %in seconds
+if ieNotDefined('trialLen'),trialLen = 15;end %in seconds
 if ieNotDefined('frameLen'),frameLen = stimLen/4; end
 if ieNotDefined('innerEdge'),innerEdge = 1.3; end
 if ieNotDefined('outerEdge'),outerEdge = 50; end
@@ -62,7 +57,7 @@ if ieNotDefined('runNum'), runNum = 1; end
 if ieNotDefined('probRwd'), probRwd = 0; end
 if ieNotDefined('currBal'), currBal = 00; end
 % if ieNotDefined('fixThresh'), fixThresh = 0.2; end
-if ieNotDefined('numTRs'), numTRs = 204; end
+if ieNotDefined('numTRs'), numTRs = 170; end
 TR=1.5;
 if ieNotDefined('numTrials'), numTrials = ceil(TR*numTRs/trialLen); end
 
@@ -164,15 +159,15 @@ task{2}{1}.waitForBacktick = waitForBacktick;
 
 %each segment is a different phase. Entire trial is a single orientation,
 %contrast,and spatial frequency.
-seglen = [stimulus.frameLen * ones(1,stimulus.stimLen/stimulus.frameLen) stimulus.trialLen-stimulus.stimLen];
-if waitForBacktick
-    seglen(end) = stimulus.trialLen-stimulus.stimLen - 0.5;%shorten blank segment length to be sure we finish before the trigger
-end
+seglen = [fixStimulus.cueTime stimulus.frameLen * ones(1,stimulus.stimLen/stimulus.frameLen) stimulus.trialLen-(stimulus.stimLen+fixStimulus.cueTime)];
+% if waitForBacktick
+%     seglen(end) = stimulus.trialLen-stimulus.stimLen - 0.5;%shorten blank segment length to be sure we finish before the trigger
+% end
 task{2}{1}.seglen = seglen;
 task{2}{1}.synchToVol = zeros(size(seglen));
-if waitForBacktick
-    task{2}{1}.synchToVol(end) = 1;
-end
+% if waitForBacktick
+%     task{2}{1}.synchToVol(end) = 1;
+% end
 
 
 
@@ -180,7 +175,7 @@ orientations = linspace(0, 180, 7);
 stimulus.orientations = orientations(1:end-1);
 
 % stimulus properties, block randomized
-stimulus.contrasts = logspace(-0.7,0,5);
+stimulus.contrasts = logspace(-0.7,0,2);
 task{2}{1}.randVars.block.contrast = 1:length(stimulus.contrasts);
 % task{2}{1}.randVars.block.contrast = logspace(-0.7,0,5);
 stimulus.freqs = logspace(-0.3,0.5,5);
@@ -190,7 +185,7 @@ task{2}{1}.randVars.block.spatFreq = 1:length(stimulus.freqs);
 % task{2}{1}.randVars.block.orientation = 1:length(orientations);
 task{2}{1}.randVars.block.nullTrial = nullTrials; %determines proportion of null trials
 
-task{2}{1}.random = 0;
+task{2}{1}.random = 1;
 task{2}{1}.numTrials = numTrials;
 % task{2}{1}.nTrials = numTrials;
 task{2}{1}.collectEyeData = true;
@@ -344,7 +339,6 @@ if any(task.thistrial.thisseg == stimulus.stimulusSegments) && (~task.thistrial.
     stimulus.oriNum = newOri;
     stimulus.tex = stimulus.allGratings{icontrast,ifreq};
     stimulus.rotation = stimulus.orientations(newOri);
-    stimulus.rotation
 end
 
 if task.numTrials == task.trialnum && task.thistrial.thisseg==length(task.seglen)
@@ -377,7 +371,7 @@ function stimulus = myInitStimulus(stimulus,myscreen,task)
 % keep an array that lists which of the segments we
 % are presenting the stimulus in.
 % stimulus.stimulusSegments = 1:stimulus.stimLen/stimulus.frameLen;
-stimulus.stimulusSegments = 1:(length(task{2}{1}.seglen) - 1);
+stimulus.stimulusSegments = 2:(length(task{2}{1}.seglen) - 1);
 
 stimulus.pixRes = min(myscreen.screenHeight/myscreen.imageHeight, myscreen.screenWidth/myscreen.imageWidth);
 
@@ -451,13 +445,6 @@ r = uint8(permute(repmat(tmpGrating, [1 1 4]), [3 1 2]));
 stimulus.tex = mglCreateTexture(r,[],1);
 
 
-
-%create all of the gratings
-stimulus.contrasts = logspace(-0.7,0,5);
-task{2}{1}.randVars.block.contrast = 1:length(stimulus.contrasts);
-% task{2}{1}.randVars.block.contrast = logspace(-0.7,0,5);
-stimulus.freqs = logspace(-0.3,0.5,5);
-task{2}{1}.randVars.block.spatFreq = 1:length(stimulus.freqs);
 for icontrast = 1:length(stimulus.contrasts)
     for ifreq=1:length(stimulus.freqs)
         newPhase = ceil(rand(1)*stimulus.numPhases);
@@ -517,6 +504,7 @@ end
 global fixStimulus;
 myscreen = initStimulus('fixStimulus',myscreen);
 
+minThreshold=0.05;
 
 % if ~isfield(fixStimulus,'precueTime'); fixStimulus.precueTime = 3; end%trial length in seconds
 if ~isfield(fixStimulus,'trialLength'); fixStimulus.trialLength = 18; end%trial length in seconds
@@ -568,14 +556,14 @@ mglTextSet(fixStimulus.digitFont,fixStimulus.digitSize,fixStimulus.digitColor,0,
 task{1}.seglen = [fixStimulus.cueTime fixStimulus.interTime ...
     fixStimulus.cueTime fixStimulus.responseTime fixStimulus.postResponseTime];
 
-if fixStimulus.waitForBacktick
-    task{1}.seglen(end) = task{1}.seglen(end) - 0.5;
-end
-task{1}.getResponse = [0 0 0 1 0];
+% if fixStimulus.waitForBacktick
+%     task{1}.seglen(end) = task{1}.seglen(end) - 0.5;
+% end
+task{1}.getResponse = [0 0 1 1 0];
 task{1}.synchToVol = zeros(size(task{1}.seglen));
-if fixStimulus.waitForBacktick
-    task{1}.synchToVol(end) = 1;
-end
+% if fixStimulus.waitForBacktick
+%     task{1}.synchToVol(end) = 1;
+% end
 
 
 
@@ -583,9 +571,9 @@ end
 
 % init a 2 down 1 up staircase
 fixStimulus.stair{1} = upDownStaircase(1,2,fixStimulus.threshStair1,fixStimulus.stairStepSize,1);
-fixStimulus.stair{1}.minThreshold = 0;
+fixStimulus.stair{1}.minThreshold = minThreshold;
 fixStimulus.stair{2} = upDownStaircase(1,2,fixStimulus.threshStair2,fixStimulus.stairStepSize,1);
-fixStimulus.stair{2}.minThreshold = 0;
+fixStimulus.stair{2}.minThreshold = minThreshold;
 
 % init the task
 [task{1}, myscreen] = initTask(task{1},myscreen,@fixStartSegmentCallback,@fixDrawStimulusCallback,@fixTrialResponseCallback,@fixTrialStartCallback);
@@ -618,6 +606,7 @@ task.thistrial.correctResponse = round(rand)+1;
 
 %determine digit stream speed, according to staircase
 task.thistrial.SOA = fixStimulus.stair{fixStimulus.whichStair}.threshold;
+
 task.thistrial.ISI = task.thistrial.SOA/2;
 task.thistrial.numDigits = ceil(fixStimulus.trialLength/task.thistrial.SOA);
 task.thistrial.numDigitTypes = floor(fixStimulus.interTime/(task.thistrial.SOA*fixStimulus.targetDigitCount));
@@ -706,8 +695,10 @@ if mglGetSecs(task.thistrial.digitTimer)<(task.thistrial.SOA - task.thistrial.IS
 end
 
 %TODO: DRAW CIRCLE, color fixStimulus.thisColor.
-nslices = 16;
-mglGluAnnulus(0,0,fixStimulus.cueSize-fixStimulus.cueWidth/2, fixStimulus.cueSize+fixStimulus.cueWidth/2, fixStimulus.thisColor',nslices);
+if task.thistrial.thisseg == 1 || task.thistrial.thisseg == 3 || task.thistrial.thisseg == 4
+    nslices = 32;
+    mglGluAnnulus(0,0,fixStimulus.cueSize-fixStimulus.cueWidth/2, fixStimulus.cueSize+fixStimulus.cueWidth/2, fixStimulus.thisColor',nslices);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function that gets called when subject responds
@@ -763,6 +754,7 @@ end
 % update staircase
 if fixStimulus.useStaircase
     fixStimulus.stair{fixStimulus.whichStair} = upDownStaircase(fixStimulus.stair{fixStimulus.whichStair}, 1);
+    
     %     fixStimulus.staircase = upDownStaircase(fixStimulus.staircase,response);
 %         fixStimulus.threshold = fixStimulus.stair{1}.threshold;
 end
