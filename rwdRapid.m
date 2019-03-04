@@ -753,7 +753,7 @@ end
 
 % update staircase
 if fixStimulus.useStaircase
-    fixStimulus.stair{fixStimulus.whichStair} = upDownStaircase(fixStimulus.stair{fixStimulus.whichStair}, 1);
+    fixStimulus.stair{fixStimulus.whichStair} = upDownStaircase(fixStimulus.stair{fixStimulus.whichStair}, response);
     
     %     fixStimulus.staircase = upDownStaircase(fixStimulus.staircase,response);
 %         fixStimulus.threshold = fixStimulus.stair{1}.threshold;
