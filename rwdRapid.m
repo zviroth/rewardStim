@@ -1,6 +1,13 @@
 % CHECK NULL TRIALS, MINIMUM THRESHOLD AND PAUSE DURATION!!
+%rwdRapid('rewardType=''H''','runNum=6','useStaircase=0','currBal=14.91','numTrials=17','displayName=''3tb''', 'threshStair1=0.32', 'threshStair2=0.32');
+% rwdRapid('rewardType=''H''','runNum=8','useStaircase=0','currBal=24.24','numTrials=17','displayName=''3tb''', 'threshStair1=0.3', 'threshStair2=0.3');
+% rwdRapid('rewardType=''H''','runNum=10','useStaircase=0','currBal=32.9','numTrials=17','displayName=''3tb''', 'threshStair1=0.28', 'threshStair2=0.28');
+
+%rwdRapid('rewardType=''H''','runNum=2','useStaircase=0','currBal=0','numTrials=17','displayName=''3tb''', 'threshStair1=0.1', 'threshStair2=0.5');
+ 
 % rwdRapid('displayName=''rm315''')
-%
+% rwdRapid('rewardType=''H''','runNum=2','useStaircase=0','currBal=0','numTrials=17','displayName=''3tb''', 'threshStair1=0.275', 'threshStair2=0.45');
+
 %        $Id: rwdRapid.m,v 1.0 2019/01/18 zvi
 %      usage: rwdRapid('rewardType=''H''','runNum=1','useStaircase=1','currBal=0','numTrials=15','displayName=''rm315''', 'threshStair1=0.15','threshStair2=0.4');
 %         by: zvi roth
@@ -23,7 +30,7 @@ getArgs(varargin, [], 'verbose=0');
 % set default parameters
 % if ieNotDefined('direction'),direction = -1;end
 
-if ieNotDefined('displayName'), displayName = '3tb'; end
+if ieNotDefined('displayName'), displayName = 'rm315'; end
 if ieNotDefined('waitForBacktick')
     if strcmp(displayName, 'rm315') || strcmp(displayName, 'laptop')
         waitForBacktick = 0;
@@ -570,9 +577,9 @@ task{1}.synchToVol = zeros(size(task{1}.seglen));
 [task{1}, myscreen] = addTraces(task{1}, myscreen, 'segment', 'phase', 'response');
 
 % init a 2 down 1 up staircase
-fixStimulus.stair{1} = upDownStaircase(1,2,fixStimulus.threshStair1,fixStimulus.stairStepSize,1);
+fixStimulus.stair{1} = upDownStaircase(1,2,fixStimulus.threshStair1,fixStimulus.stairStepSize,0);
 fixStimulus.stair{1}.minThreshold = minThreshold;
-fixStimulus.stair{2} = upDownStaircase(1,2,fixStimulus.threshStair2,fixStimulus.stairStepSize,1);
+fixStimulus.stair{2} = upDownStaircase(1,2,fixStimulus.threshStair2,fixStimulus.stairStepSize,0);
 fixStimulus.stair{2}.minThreshold = minThreshold;
 
 % init the task
